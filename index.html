@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saurashree Kar — Art, Craft & Crochet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -314,7 +317,14 @@
 <base target="_blank">
 </head>
 <body>
-    <div class="loading-overlay" id="loadingOverlay">
+    <script>
+        // Emergency loader - always hide after 4 seconds
+        setTimeout(function() {
+            var el = document.getElementById('loadingOverlay');
+            if (el) el.classList.add('hidden');
+        }, 4000);
+    </script>
+    <div class="loading-overlay" id="loadingOverlay" style="transition:opacity 0.5s ease;">
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading Saurashree's World...</div>
     </div>
@@ -324,7 +334,7 @@
     <nav id="navbar">
         <div class="nav-container">
             <a href="#" class="nav-logo">
-                <img src="logo.png" alt="Saurashree Kar Logo">
+                <img src="logo.png?v=2" alt="Saurashree Kar Logo">
                 <span>Saurashree Kar</span>
             </a>
             <ul class="nav-links" id="navLinks">
@@ -343,7 +353,7 @@
     <!-- Hero -->
     <section class="hero" id="home">
         <div class="hero-content">
-            <img src="logo.png" alt="Saurashree Kar Logo" class="hero-logo">
+            <img src="logo.png?v=2" alt="Saurashree Kar Logo" class="hero-logo">
             <h1>Art, Craft <span>&</span> Crochet</h1>
             <p class="hero-tagline">The Creative World of Saurashree Kar</p>
             <p class="hero-desc">A young artist exploring the beauty of colors, textures, and imagination through paintings, crafts, and crochet.</p>
@@ -358,7 +368,7 @@
     <section id="about">
         <div class="about-grid">
             <div class="about-image">
-                <img src="artist.png" alt="Saurashree Kar">
+                <img src="artist.png?v=2" alt="Saurashree Kar">
             </div>
             <div class="about-text">
                 <div class="section-label">About the Artist</div>
@@ -419,7 +429,7 @@
     <!-- Footer -->
     <footer id="contact">
         <div class="footer-content">
-            <img src="logo.png" alt="Logo" class="footer-logo">
+            <img src="logo.png?v=2" alt="Logo" class="footer-logo">
             <h3 class="footer-name">Saurashree Kar</h3>
             <p class="footer-tag">Art · Craft · Crochet · Stories</p>
             <div class="footer-divider"></div>
@@ -587,6 +597,12 @@
     <button class="scroll-top" id="scrollTop" aria-label="Scroll to top">↑</button>
 
     <script>
+        // Error boundary - always hide loading screen
+        window.onerror = function(msg, url, line) {
+            console.error('JS Error:', msg, 'at line', line);
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            return false;
+        };
 
         // ==================== CONFIGURATION ====================
         const ADMIN_PASSWORD = 'Saurashree@baba2026!';
@@ -737,6 +753,7 @@
 
         // ==================== LOAD DATA ====================
         async function loadData() {
+            console.log('loadData starting...');
             showStatus('Loading data...', 'syncing');
 
             try {
@@ -750,6 +767,7 @@
                 if (savedComments) commentsData = JSON.parse(savedComments);
             } catch(e) {}
 
+            console.log('loadData complete, hiding overlay');
             loadingOverlay.classList.add('hidden');
             renderGallery();
             renderStories();
@@ -1191,7 +1209,14 @@
         // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', () => {
             loadConfig();
-            loadData();
+            loadData().catch(() => {
+                // If loadData fails, hide loading anyway
+                loadingOverlay.classList.add('hidden');
+            });
+            // Safety timeout: always hide after 3 seconds max
+            setTimeout(() => {
+                loadingOverlay.classList.add('hidden');
+            }, 3000);
         });
 
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
