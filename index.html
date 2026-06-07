@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saurashree Kar — Art, Craft & Crochet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --cream: #FDF8F3; --warm-white: #FFFCF8; --charcoal: #2D2D2D;
@@ -263,14 +264,15 @@
         .upload-progress.active { display: block; }
         .upload-progress-bar { height: 100%; background: var(--accent-gold); width: 0%; transition: width 0.3s ease; border-radius: 2px; }
 
-        .cloudinary-config { background: #f0f7ff; border: 1px solid #b3d9ff; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-        .cloudinary-config h5 { font-size: 0.9rem; color: #0066cc; margin-bottom: 8px; }
-        .cloudinary-config p { font-size: 0.8rem; color: #4a5568; margin-bottom: 4px; }
-        .cloudinary-config input { width: 100%; padding: 8px 12px; border: 1px solid #b3d9ff; border-radius: 8px; font-size: 0.85rem; margin-top: 4px; font-family: 'Inter', sans-serif; }
-        .cloudinary-config input:focus { outline: none; border-color: #0066cc; }
-        .cloudinary-config .config-status { font-size: 0.75rem; margin-top: 6px; padding: 4px 8px; border-radius: 6px; display: inline-block; }
-        .cloudinary-config .config-status.ok { background: #d4edda; color: #155724; }
-        .cloudinary-config .config-status.pending { background: #fff3cd; color: #856404; }
+        .connection-status {
+            position: fixed; top: 80px; right: 24px; z-index: 1001;
+            padding: 8px 16px; border-radius: 20px; font-size: 0.8rem;
+            font-weight: 500; display: none; align-items: center; gap: 6px;
+        }
+        .connection-status.show { display: flex; }
+        .connection-status.online { background: #d4edda; color: #155724; }
+        .connection-status.offline { background: #f8d7da; color: #721c24; }
+        .connection-status.syncing { background: #fff3cd; color: #856404; }
 
         /* FOOTER */
         footer { background: var(--charcoal); color: rgba(255,255,255,0.7); padding: 60px 24px 30px; text-align: center; }
@@ -287,19 +289,7 @@
         .scroll-top:hover { background: var(--charcoal); color: white; transform: translateY(-3px); }
 
         /* RESPONSIVE */
-                .connection-status {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--charcoal); color: white; padding: 10px 24px;
-            border-radius: 50px; font-size: 0.85rem; z-index: 10000;
-            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
-            box-shadow: var(--shadow-medium);
-        }
-        .connection-status.show { opacity: 1; }
-        .connection-status.online { background: #28a745; }
-        .connection-status.offline { background: #dc5050; }
-        .connection-status.syncing { background: var(--accent-gold); color: var(--charcoal); }
-
-@media (max-width: 900px) {
+        @media (max-width: 900px) {
             .about-grid { grid-template-columns: 1fr; text-align: center; gap: 40px; }
             .about-image::before { display: none; }
             .about-tags { justify-content: center; }
@@ -325,28 +315,21 @@
             .filter-btn { padding: 8px 18px; font-size: 0.8rem; }
             .stories-grid { grid-template-columns: 1fr; }
         }
+
+        .no-download { -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none; pointer-events: none; }
     </style>
-<base target="_blank">
 </head>
 <body>
-    <script>
-        // Emergency loader - always hide after 4 seconds
-        setTimeout(function() {
-            var el = document.getElementById('loadingOverlay');
-            if (el) el.classList.add('hidden');
-        }, 4000);
-    </script>
-    <div class="loading-overlay" id="loadingOverlay" style="transition:opacity 0.5s ease;">
+    <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading Saurashree's World...</div>
     </div>
     <div class="connection-status" id="connectionStatus"></div>
 
-    <!-- Navigation -->
     <nav id="navbar">
         <div class="nav-container">
             <a href="#" class="nav-logo">
-                <img src="logo.png?v=2" alt="Saurashree Kar Logo">
+                <img src="logo.png" alt="Saurashree Kar Logo">
                 <span>Saurashree Kar</span>
             </a>
             <ul class="nav-links" id="navLinks">
@@ -362,10 +345,9 @@
         </div>
     </nav>
 
-    <!-- Hero -->
     <section class="hero" id="home">
         <div class="hero-content">
-            <img src="logo.png?v=2" alt="Saurashree Kar Logo" class="hero-logo">
+            <img src="logo.png" alt="Saurashree Kar Logo" class="hero-logo">
             <h1>Art, Craft <span>&</span> Crochet</h1>
             <p class="hero-tagline">The Creative World of Saurashree Kar</p>
             <p class="hero-desc">A young artist exploring the beauty of colors, textures, and imagination through paintings, crafts, and crochet.</p>
@@ -376,11 +358,10 @@
         </div>
     </section>
 
-    <!-- About -->
     <section id="about">
         <div class="about-grid">
             <div class="about-image">
-                <img src="artist.png?v=2" alt="Saurashree Kar">
+                <img src="artist.jpg" alt="Saurashree Kar">
             </div>
             <div class="about-text">
                 <div class="section-label">About the Artist</div>
@@ -388,19 +369,18 @@
                 <p>I am a Class VII student at Bhavan's Gangabux Kanoria Vidyamandir, where I balance my academics with a wonderfully diverse set of hobbies. I have a strong creative streak, enjoying both art and crafts as well as crochet.</p>
                 <p>My artistic side extends to singing and writing stories, while my inquisitive mind keeps me engaged in reading and solving puzzles and riddles. With such a rich blend of creative, intellectual, and artistic pursuits, I come across as a curious and imaginative young student with a lot of varied interests.</p>
                 <div class="about-tags">
-                    <span class="tag">Painting</span>
-                    <span class="tag">Craft</span>
-                    <span class="tag">Crochet</span>
-                    <span class="tag">Singing</span>
-                    <span class="tag">Reading</span>
-                    <span class="tag">Story Writing</span>
-                    <span class="tag">Puzzles</span>
+                    <span class="tag">🎨 Painting</span>
+                    <span class="tag">✂️ Craft</span>
+                    <span class="tag">🧶 Crochet</span>
+                    <span class="tag">🎤 Singing</span>
+                    <span class="tag">📖 Reading</span>
+                    <span class="tag">✍️ Story Writing</span>
+                    <span class="tag">🧩 Puzzles</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Gallery -->
     <section id="gallery">
         <div class="section-header">
             <div class="section-label">Portfolio</div>
@@ -409,20 +389,19 @@
         </div>
         <div class="gallery-filters">
             <button class="filter-btn active" data-filter="all">All Works</button>
-            <button class="filter-btn" data-filter="paintings">Paintings & Drawings</button>
-            <button class="filter-btn" data-filter="crochet">Crochet</button>
-            <button class="filter-btn" data-filter="craft">Craft</button>
+            <button class="filter-btn" data-filter="paintings">🎨 Paintings & Drawings</button>
+            <button class="filter-btn" data-filter="crochet">🧶 Crochet</button>
+            <button class="filter-btn" data-filter="craft">✂️ Craft</button>
         </div>
         <div class="gallery-grid" id="galleryGrid">
             <div class="gallery-empty">
                 <div class="gallery-empty-icon">🎨</div>
                 <h4>Gallery Coming Soon!</h4>
-                <p>Artwork will be added here. Click the settings icon to upload your creations.</p>
+                <p>Artwork will be added here. Click the settings icon (⚙️) to upload your creations.</p>
             </div>
         </div>
     </section>
 
-    <!-- Stories -->
     <section id="stories">
         <div class="section-header">
             <div class="section-label">Literary Corner</div>
@@ -438,10 +417,9 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer id="contact">
         <div class="footer-content">
-            <img src="logo.png?v=2" alt="Logo" class="footer-logo">
+            <img src="logo.png" alt="Logo" class="footer-logo">
             <h3 class="footer-name">Saurashree Kar</h3>
             <p class="footer-tag">Art · Craft · Crochet · Stories</p>
             <div class="footer-divider"></div>
@@ -449,7 +427,6 @@
         </div>
     </footer>
 
-    <!-- Lightbox -->
     <div class="lightbox" id="lightbox">
         <button class="lightbox-close" id="lightboxClose">&times;</button>
         <button class="lightbox-nav lightbox-prev" id="lightboxPrev">&#10094;</button>
@@ -476,13 +453,10 @@
         </div>
     </div>
 
-    <!-- Admin Toggle -->
     <button class="admin-toggle" id="adminToggle" title="Manage Content">⚙️</button>
 
-    <!-- Admin Panel Overlay -->
     <div class="admin-panel-overlay" id="adminOverlay"></div>
 
-    <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel">
         <div class="admin-login" id="adminLogin">
             <div class="lock-icon">🔒</div>
@@ -494,15 +468,14 @@
         </div>
 
         <div class="admin-header">
-            <h3>Manage Content</h3>
+            <h3>🎨 Manage Content</h3>
             <span class="admin-logout" id="adminLogout">Logout</span>
             <button class="admin-close" id="adminClose">&times;</button>
         </div>
         <div class="admin-body">
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="artwork">Artwork</button>
-                <button class="admin-tab" data-tab="stories">Stories</button>
-                <button class="admin-tab" data-tab="config">Cloudinary</button>
+                <button class="admin-tab active" data-tab="artwork">🎨 Artwork</button>
+                <button class="admin-tab" data-tab="stories">📖 Stories</button>
             </div>
 
             <div class="admin-tab-content active" id="tab-artwork">
@@ -515,9 +488,9 @@
                     <div class="admin-input-group">
                         <label>Category</label>
                         <select id="artworkCategory">
-                            <option value="paintings">Paintings & Drawings</option>
-                            <option value="crochet">Crochet</option>
-                            <option value="craft">Craft</option>
+                            <option value="paintings">🎨 Paintings & Drawings</option>
+                            <option value="crochet">🧶 Crochet</option>
+                            <option value="craft">✂️ Craft</option>
                         </select>
                     </div>
                     <div class="admin-input-group">
@@ -564,66 +537,37 @@
                 </div>
             </div>
 
-            <div class="admin-tab-content" id="tab-config">
-                <div class="cloudinary-config">
-                    <h5>Cloudinary Configuration</h5>
-                    <p>Enter your Cloudinary credentials to enable cloud storage for images.</p>
-                    <p style="font-size:0.75rem;color:#718096;">Don't have an account? <a href="https://cloudinary.com/users/register/free" target="_blank" style="color:#0066cc;">Sign up free at Cloudinary</a></p>
-
-                    <div style="margin-top:12px;">
-                        <label style="font-size:0.8rem;font-weight:500;">Cloud Name</label>
-                        <input type="text" id="cloudName" placeholder="your-cloud-name">
-                    </div>
-                    <div style="margin-top:8px;">
-                        <label style="font-size:0.8rem;font-weight:500;">Upload Preset (Unsigned)</label>
-                        <input type="text" id="uploadPreset" placeholder="your-upload-preset">
-                    </div>
-                    <div style="margin-top:8px;">
-                        <label style="font-size:0.8rem;font-weight:500;">API Key (optional, for admin)</label>
-                        <input type="text" id="apiKey" placeholder="your-api-key">
-                    </div>
-                    <div id="configStatus" class="config-status pending" style="margin-top:10px;">Not configured — images will be stored locally only</div>
-                    <button class="btn btn-primary" id="saveConfigBtn" style="margin-top:12px;width:100%;justify-content:center;">Save Configuration</button>
-                </div>
-
-                <div class="admin-hint">
-                    <strong>How to set up Cloudinary:</strong><br><br>
-                    1. <strong>Create Account:</strong> Go to cloudinary.com and sign up for free (25GB storage, no credit card needed)<br><br>
-                    2. <strong>Get Cloud Name:</strong> Find it on your Dashboard (top of page)<br><br>
-                    3. <strong>Create Upload Preset:</strong> Go to Settings → Upload → Upload Presets → Add New. Name it (e.g., "saurashree-art"), set Signing Mode to UNSIGNED, and save<br><br>
-                    4. <strong>Enter Details:</strong> Paste your Cloud Name and Upload Preset above and click Save<br><br>
-                    5. <strong>Done!</strong> All future uploads will go to Cloudinary's cloud CDN
-                </div>
-            </div>
-
             <div class="admin-hint" style="margin-top:20px;">
-                <strong>Data Storage:</strong> Comments and ratings are stored in browser localStorage. For shared access across devices, set up a backend service.
+                <strong>💡 Note:</strong> Images are uploaded securely to Cloudinary, Text is saved to Firebase! 
             </div>
         </div>
         <div class="admin-actions">
-            <button class="btn btn-primary" id="addContentBtn">Add Content</button>
-            <button class="btn btn-secondary" id="exportDataBtn">Export Data</button>
+            <button class="btn btn-primary" id="addContentBtn">➕ Add Content</button>
+            <button class="btn btn-secondary" id="exportDataBtn">💾 Export Data</button>
         </div>
     </div>
 
     <button class="scroll-top" id="scrollTop" aria-label="Scroll to top">↑</button>
 
     <script>
-        // Error boundary - always hide loading screen
-        window.onerror = function(msg, url, line) {
-            console.error('JS Error:', msg, 'at line', line);
-            var el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden');
-            return false;
+        // ==================== FIREBASE CONFIGURATION ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfCAbM3uDk82VMHzuJnvI8mWmKdToO0Hw",
+            authDomain: "saurashree-art.firebaseapp.com",
+            projectId: "saurashree-art",
+            storageBucket: "saurashree-art.firebasestorage.app",
+            messagingSenderId: "127530409975",
+            appId: "1:127530409975:web:c3b88810f36b0572af58f2"
         };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ==================== CLOUDINARY CONFIGURATION ====================
+        const CLOUDINARY_CLOUD_NAME = 'dv6qkiu50'; 
+        const CLOUDINARY_UPLOAD_PRESET = 'saurashree-art'; 
 
         // ==================== CONFIGURATION ====================
         const ADMIN_PASSWORD = 'Saurashree@baba2026!';
-
-        let CLOUDINARY_CONFIG = {
-            cloudName: '',
-            uploadPreset: '',
-            apiKey: ''
-        };
 
         // ==================== DATA STORE ====================
         let artworkData = [];
@@ -637,7 +581,6 @@
         let currentAdminTab = 'artwork';
         let currentFileData = null;
         let isUploading = false;
-        let cloudinaryReady = false;
 
         // ==================== DOM ELEMENTS ====================
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -685,50 +628,7 @@
         const storyContent = document.getElementById('storyContent');
         const adminTabs = document.querySelectorAll('.admin-tab');
         const adminTabContents = document.querySelectorAll('.admin-tab-content');
-        const cloudNameInput = document.getElementById('cloudName');
-        const uploadPresetInput = document.getElementById('uploadPreset');
-        const apiKeyInput = document.getElementById('apiKey');
-        const configStatus = document.getElementById('configStatus');
-        const saveConfigBtn = document.getElementById('saveConfigBtn');
 
-        // ==================== LOAD CONFIGURATION ====================
-        function loadConfig() {
-            try {
-                const saved = localStorage.getItem('saurashree_cloudinary_config');
-                if (saved) {
-                    CLOUDINARY_CONFIG = JSON.parse(saved);
-                    cloudNameInput.value = CLOUDINARY_CONFIG.cloudName || '';
-                    uploadPresetInput.value = CLOUDINARY_CONFIG.uploadPreset || '';
-                    apiKeyInput.value = CLOUDINARY_CONFIG.apiKey || '';
-                    updateConfigStatus();
-                }
-            } catch(e) {}
-        }
-
-        function updateConfigStatus() {
-            if (CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.uploadPreset) {
-                cloudinaryReady = true;
-                configStatus.textContent = 'Cloudinary connected — images will upload to cloud';
-                configStatus.className = 'config-status ok';
-            } else {
-                cloudinaryReady = false;
-                configStatus.textContent = 'Not configured — images will be stored as base64 locally';
-                configStatus.className = 'config-status pending';
-            }
-        }
-
-        saveConfigBtn.addEventListener('click', () => {
-            CLOUDINARY_CONFIG = {
-                cloudName: cloudNameInput.value.trim(),
-                uploadPreset: uploadPresetInput.value.trim(),
-                apiKey: apiKeyInput.value.trim()
-            };
-            localStorage.setItem('saurashree_cloudinary_config', JSON.stringify(CLOUDINARY_CONFIG));
-            updateConfigStatus();
-            showStatus('Cloudinary config saved!', 'online');
-        });
-
-        // ==================== CONNECTION STATUS ====================
         function showStatus(message, type) {
             connectionStatus.textContent = message;
             connectionStatus.className = 'connection-status show ' + type;
@@ -737,64 +637,55 @@
             }, 3000);
         }
 
-        // ==================== CLOUDINARY UPLOAD ====================
-        async function uploadToCloudinary(file) {
-            if (!cloudinaryReady) return null;
-
-            const url = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CONFIG.cloudName + '/image/upload';
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-            formData.append('folder', 'saurashree-art');
-
+        // ==================== LOAD FIREBASE DATA ====================
+        async function loadFromCloud() {
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                if (data.secure_url) {
-                    return data.secure_url;
-                }
-                throw new Error(data.error ? data.error.message : 'Upload failed');
-            } catch (error) {
-                console.error('Cloudinary upload error:', error);
-                return null;
+                // Fetch Artworks
+                const artSnap = await db.collection('artworks').get();
+                artworkData = [];
+                artSnap.forEach(doc => artworkData.push(doc.data()));
+                artworkData.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                // Fetch Stories
+                const storySnap = await db.collection('stories').get();
+                storiesData = [];
+                storySnap.forEach(doc => storiesData.push(doc.data()));
+                storiesData.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                // Fetch Comments
+                const commentsSnap = await db.collection('comments').get();
+                commentsSnap.forEach(doc => { commentsData[doc.id] = doc.data().list || []; });
+
+                // Fetch Ratings
+                const ratingsSnap = await db.collection('ratings').get();
+                ratingsSnap.forEach(doc => { ratingsData[doc.id] = doc.data().list || []; });
+
+                loadingOverlay.classList.add('hidden');
+                renderGallery();
+                renderStories();
+                renderAdminLists();
+            } catch(e) {
+                console.error("Firebase Error:", e);
+                showStatus('Failed to load database.', 'offline');
+                loadingOverlay.classList.add('hidden');
             }
         }
 
-        // ==================== LOAD DATA ====================
-        function loadData() {
-            console.log('loadData starting...');
-            showStatus('Loading data...', 'syncing');
+        // ==================== UPLOAD IMAGE TO CLOUDINARY ====================
+        async function uploadImageToCloudinary(file) {
+            const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
             try {
-                const savedArtwork = localStorage.getItem('saurashree_artwork');
-                const savedStories = localStorage.getItem('saurashree_stories');
-                const savedRatings = localStorage.getItem('saurashree_ratings');
-                const savedComments = localStorage.getItem('saurashree_comments');
-                if (savedArtwork) artworkData = JSON.parse(savedArtwork);
-                if (savedStories) storiesData = JSON.parse(savedStories);
-                if (savedRatings) ratingsData = JSON.parse(savedRatings);
-                if (savedComments) commentsData = JSON.parse(savedComments);
-            } catch(e) {}
-
-            console.log('loadData complete, hiding overlay');
-            loadingOverlay.classList.add('hidden');
-            renderGallery();
-            renderStories();
-            renderAdminLists();
-            showStatus('Data loaded!', 'online');
-        }
-
-        function saveData() {
-            try {
-                localStorage.setItem('saurashree_artwork', JSON.stringify(artworkData));
-                localStorage.setItem('saurashree_stories', JSON.stringify(storiesData));
-                localStorage.setItem('saurashree_ratings', JSON.stringify(ratingsData));
-                localStorage.setItem('saurashree_comments', JSON.stringify(commentsData));
+                const response = await fetch(url, { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Cloudinary upload failed');
+                const data = await response.json();
+                return data.secure_url; 
             } catch(e) {
-                console.error('Error saving data:', e);
+                console.error('Cloudinary upload error:', e);
+                return null;
             }
         }
 
@@ -804,10 +695,7 @@
             scrollTopBtn.classList.toggle('visible', window.scrollY > 500);
         });
 
-        // ==================== MOBILE MENU ====================
-        mobileMenuBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
+        mobileMenuBtn.addEventListener('click', () => navLinks.classList.toggle('active'));
         document.querySelectorAll('.nav-links a').forEach(link => {
             link.addEventListener('click', () => navLinks.classList.remove('active'));
         });
@@ -819,25 +707,44 @@
                 : artworkData.filter(item => item.category === currentFilter);
 
             if (filteredItems.length === 0) {
-                galleryGrid.innerHTML = '<div class="gallery-empty"><div class="gallery-empty-icon">🎨</div><h4>No artwork yet in this category</h4><p>Use the settings button to add your creations!</p></div>';
+                galleryGrid.innerHTML = `
+                    <div class="gallery-empty">
+                        <div class="gallery-empty-icon">🎨</div>
+                        <h4>No artwork yet in this category</h4>
+                        <p>Use the settings button (⚙️) to add your creations!</p>
+                    </div>`;
                 return;
             }
 
             galleryGrid.innerHTML = filteredItems.map((item, index) => {
                 const avg = getAverageRating(item.id);
-                return '<div class="gallery-item" data-index="' + index + '" onclick="openLightbox(' + index + ')"><img src="' + item.image + '" alt="' + item.title + '" loading="lazy"><div class="gallery-item-overlay"><div class="gallery-item-info"><h4>' + item.title + '</h4><span>' + getCategoryLabel(item.category) + '</span></div></div>' + (avg > 0 ? '<div class="gallery-item-rating">★ ' + avg.toFixed(1) + '</div>' : '') + '</div>';
+                return `
+                    <div class="gallery-item" data-index="${index}" onclick="openLightbox(${index})">
+                        <img src="${item.image}" alt="${item.title}" loading="lazy">
+                        <div class="gallery-item-overlay">
+                            <div class="gallery-item-info">
+                                <h4>${item.title}</h4>
+                                <span>${getCategoryLabel(item.category)}</span>
+                            </div>
+                        </div>
+                        ${avg > 0 ? `<div class="gallery-item-rating">★ ${avg.toFixed(1)}</div>` : ''}
+                    </div>`;
             }).join('');
         }
 
         function getCategoryLabel(cat) {
-            const labels = { paintings: 'Paintings & Drawings', crochet: 'Crochet', craft: 'Craft' };
+            const labels = { paintings: '🎨 Paintings & Drawings', crochet: '🧶 Crochet', craft: '✂️ Craft' };
             return labels[cat] || cat;
         }
 
         // ==================== STORIES RENDER ====================
         function renderStories() {
             if (storiesData.length === 0) {
-                storiesGrid.innerHTML = '<div class="stories-empty"><div class="gallery-empty-icon">📖</div><h4>Stories Coming Soon!</h4><p>Check back later for Saurashree's wonderful stories!</p></div>';
+                storiesGrid.innerHTML = `
+                    <div class="stories-empty">
+                        <div class="gallery-empty-icon">📖</div>
+                        <h4>Stories Coming Soon!</h4>
+                    </div>`;
                 return;
             }
 
@@ -845,7 +752,15 @@
                 const wordCount = story.content.split(/\s+/).length;
                 const readTime = Math.max(1, Math.ceil(wordCount / 200));
                 const date = new Date(story.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                return '<div class="story-card"><h4>' + story.title + '</h4><p>' + story.content + '</p><div class="story-card-meta"><span class="story-date">📅 ' + date + '</span><span class="story-read-time">' + readTime + ' min read</span></div></div>';
+                return `
+                    <div class="story-card">
+                        <h4>${story.title}</h4>
+                        <p>${story.content}</p>
+                        <div class="story-card-meta">
+                            <span class="story-date">📅 ${date}</span>
+                            <span class="story-read-time">${readTime} min read</span>
+                        </div>
+                    </div>`;
             }).join('');
         }
 
@@ -907,7 +822,7 @@
             if (e.key === 'ArrowRight') lightboxNext.click();
         });
 
-        // ==================== RATINGS ====================
+        // ==================== RATINGS (SYNC TO FIREBASE) ====================
         function getAverageRating(artworkId) {
             const ratings = ratingsData[artworkId];
             if (!ratings || ratings.length === 0) return 0;
@@ -926,19 +841,26 @@
         starRating.querySelectorAll('button').forEach(star => {
             star.addEventListener('click', () => {
                 const rating = parseInt(star.dataset.star);
+                
+                // Update local instantly
                 if (!ratingsData[currentLightboxItemId]) ratingsData[currentLightboxItemId] = [];
                 ratingsData[currentLightboxItemId].push(rating);
-                saveData();
                 updateStarDisplay();
                 renderGallery();
+                
                 starRating.querySelectorAll('button').forEach((s, i) => {
                     s.style.transform = i < rating ? 'scale(1.3)' : 'scale(1)';
                     setTimeout(() => s.style.transform = '', 300);
                 });
+
+                // Sync to Firebase
+                db.collection('ratings').doc(currentLightboxItemId).set({
+                    list: firebase.firestore.FieldValue.arrayUnion(rating)
+                }, { merge: true });
             });
         });
 
-        // ==================== COMMENTS ====================
+        // ==================== COMMENTS (SYNC TO FIREBASE) ====================
         function renderLightboxComments() {
             const comments = commentsData[currentLightboxItemId] || [];
             if (comments.length === 0) {
@@ -955,13 +877,19 @@
         commentSubmit.addEventListener('click', () => {
             const text = commentInput.value.trim();
             if (!text) return;
+            
+            const newComment = { name: 'Visitor', text: text, date: new Date().toISOString() };
+            
+            // Update local instantly
             if (!commentsData[currentLightboxItemId]) commentsData[currentLightboxItemId] = [];
-            commentsData[currentLightboxItemId].push({
-                name: 'Visitor', text: text, date: new Date().toISOString()
-            });
-            saveData();
+            commentsData[currentLightboxItemId].push(newComment);
             commentInput.value = '';
             renderLightboxComments();
+
+            // Sync to Firebase
+            db.collection('comments').doc(currentLightboxItemId).set({
+                list: firebase.firestore.FieldValue.arrayUnion(newComment)
+            }, { merge: true });
         });
 
         commentInput.addEventListener('keydown', (e) => {
@@ -969,9 +897,7 @@
         });
 
         // ==================== SCROLL TO TOP ====================
-        scrollTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        scrollTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
         // ==================== ADMIN PANEL ====================
         function openAdmin() {
@@ -1012,15 +938,12 @@
         }
 
         loginBtn.addEventListener('click', attemptLogin);
-        adminPassword.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') attemptLogin();
-        });
+        adminPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
 
         adminLogout.addEventListener('click', () => {
             isAdminLoggedIn = false;
             adminLogin.classList.remove('hidden');
             adminPassword.value = '';
-            adminPassword.focus();
         });
 
         adminTabs.forEach(tab => {
@@ -1030,23 +953,14 @@
                 currentAdminTab = tab.dataset.tab;
                 adminTabContents.forEach(c => c.classList.remove('active'));
                 document.getElementById('tab-' + currentAdminTab).classList.add('active');
-                updateAddButtonText();
+                addContentBtn.textContent = currentAdminTab === 'artwork' ? '➕ Add Artwork' : '➕ Add Story';
             });
         });
 
-        function updateAddButtonText() {
-            addContentBtn.textContent = currentAdminTab === 'artwork' ? 'Add Artwork' : (currentAdminTab === 'stories' ? 'Add Story' : 'Save Config');
-        }
-
         // ==================== FILE UPLOAD ====================
         fileDropZone.addEventListener('click', () => artworkFile.click());
-        fileDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileDropZone.classList.add('dragover');
-        });
-        fileDropZone.addEventListener('dragleave', () => {
-            fileDropZone.classList.remove('dragover');
-        });
+        fileDropZone.addEventListener('dragover', (e) => { e.preventDefault(); fileDropZone.classList.add('dragover'); });
+        fileDropZone.addEventListener('dragleave', () => fileDropZone.classList.remove('dragover'));
         fileDropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             fileDropZone.classList.remove('dragover');
@@ -1057,10 +971,7 @@
         });
 
         function handleFile(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file.');
-                return;
-            }
+            if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
             const reader = new FileReader();
             reader.onload = (e) => {
                 currentFileData = { file: file, dataUrl: e.target.result };
@@ -1070,10 +981,10 @@
             reader.readAsDataURL(file);
         }
 
-        // ==================== ADD CONTENT ====================
+        // ==================== ADD CONTENT (SYNC TO FIREBASE & CLOUDINARY) ====================
         addContentBtn.addEventListener('click', () => {
             if (currentAdminTab === 'artwork') addArtwork();
-            else if (currentAdminTab === 'stories') addStory();
+            else addStory();
         });
 
         async function addArtwork() {
@@ -1086,53 +997,52 @@
 
             isUploading = true;
             addContentBtn.disabled = true;
-            addContentBtn.textContent = 'Uploading...';
+            addContentBtn.textContent = '📤 Uploading...';
             uploadProgress.classList.add('active');
             uploadProgressBar.style.width = '30%';
 
-            let imageUrl = currentFileData.dataUrl;
-
-            // Try Cloudinary first
-            if (cloudinaryReady) {
-                const cloudUrl = await uploadToCloudinary(currentFileData.file);
-                if (cloudUrl) {
-                    imageUrl = cloudUrl;
-                    uploadProgressBar.style.width = '80%';
-                    showStatus('Uploaded to Cloudinary!', 'online');
-                } else {
-                    showStatus('Cloudinary failed, using local storage', 'offline');
-                }
+            // 1. Upload Image to Cloudinary
+            const cloudUrl = await uploadImageToCloudinary(currentFileData.file);
+            if (!cloudUrl) {
+                showStatus('⚠️ Cloudinary upload failed.', 'offline');
+                resetUploadState();
+                return;
             }
+            
+            uploadProgressBar.style.width = '100%';
 
+            // 2. Save Data to Firebase
             const newArtwork = {
                 id: Date.now().toString(),
                 title: title,
                 category: category,
-                image: imageUrl,
+                image: cloudUrl,
                 date: new Date().toISOString()
             };
 
-            artworkData.unshift(newArtwork);
-            saveData();
+            try {
+                await db.collection('artworks').doc(newArtwork.id).set(newArtwork);
+                artworkData.unshift(newArtwork);
+                
+                showStatus('✅ Uploaded successfully!', 'online');
+                renderGallery();
+                renderAdminLists();
 
-            artworkTitle.value = '';
-            artworkCategory.value = 'paintings';
-            currentFileData = null;
-            previewContainer.style.display = 'none';
-            artworkFile.value = '';
-            uploadProgress.classList.remove('active');
-            uploadProgressBar.style.width = '0%';
+                // Reset form
+                artworkTitle.value = '';
+                artworkCategory.value = 'paintings';
+                currentFileData = null;
+                previewContainer.style.display = 'none';
+                artworkFile.value = '';
+            } catch (e) {
+                console.error("Firebase Error: ", e);
+                showStatus('⚠️ Database save failed. Check rules.', 'offline');
+            }
 
-            renderGallery();
-            renderAdminLists();
-
-            isUploading = false;
-            addContentBtn.disabled = false;
-            addContentBtn.textContent = 'Added!';
-            setTimeout(() => addContentBtn.textContent = 'Add Artwork', 1500);
+            resetUploadState('✅ Added!');
         }
 
-        async function addStory() {
+        function addStory() {
             const title = storyTitle.value.trim();
             const content = storyContent.value.trim();
 
@@ -1146,35 +1056,52 @@
                 date: new Date().toISOString()
             };
 
-            storiesData.unshift(newStory);
-            saveData();
-
-            storyTitle.value = '';
-            storyContent.value = '';
-
-            renderStories();
-            renderAdminLists();
-            addContentBtn.textContent = 'Added!';
-            setTimeout(() => addContentBtn.textContent = 'Add Story', 1500);
+            db.collection('stories').doc(newStory.id).set(newStory).then(() => {
+                storiesData.unshift(newStory);
+                storyTitle.value = '';
+                storyContent.value = '';
+                renderStories();
+                renderAdminLists();
+                addContentBtn.textContent = '✅ Added!';
+                setTimeout(() => addContentBtn.textContent = '➕ Add Story', 1500);
+            }).catch(e => {
+                console.error("Firebase Error: ", e);
+                showStatus('⚠️ Database save failed.', 'offline');
+            });
         }
 
-        // ==================== DELETE ====================
-        window.deleteArtwork = function(id) {
+        function resetUploadState(text = '➕ Add Artwork') {
+            uploadProgress.classList.remove('active');
+            uploadProgressBar.style.width = '0%';
+            isUploading = false;
+            addContentBtn.disabled = false;
+            addContentBtn.textContent = text;
+            setTimeout(() => addContentBtn.textContent = '➕ Add Artwork', 1500);
+        }
+
+        // ==================== DELETE (SYNC TO FIREBASE) ====================
+        window.deleteArtwork = async function(id) {
             if (!confirm('Are you sure you want to delete this artwork?')) return;
+            
             artworkData = artworkData.filter(item => item.id !== id);
             delete ratingsData[id];
             delete commentsData[id];
-            saveData();
             renderGallery();
             renderAdminLists();
+
+            await db.collection('artworks').doc(id).delete();
+            await db.collection('comments').doc(id).delete();
+            await db.collection('ratings').doc(id).delete();
         };
 
-        window.deleteStory = function(id) {
+        window.deleteStory = async function(id) {
             if (!confirm('Are you sure you want to delete this story?')) return;
+
             storiesData = storiesData.filter(item => item.id !== id);
-            saveData();
             renderStories();
             renderAdminLists();
+
+            await db.collection('stories').doc(id).delete();
         };
 
         // ==================== RENDER ADMIN LISTS ====================
@@ -1182,25 +1109,34 @@
             if (artworkData.length === 0) {
                 adminArtworkList.innerHTML = '<p style="color:var(--soft-gray);font-size:0.9rem;text-align:center;padding:20px;">No artwork added yet.</p>';
             } else {
-                adminArtworkList.innerHTML = artworkData.map(item => '<div class="admin-artwork-item"><img src="' + item.image + '" alt="' + item.title + '"><div class="admin-artwork-item-info"><h5>' + item.title + '</h5><span>' + getCategoryLabel(item.category) + '</span></div><button class="admin-artwork-item-delete" onclick="deleteArtwork('' + item.id + '')" title="Delete">🗑️</button></div>').join('');
+                adminArtworkList.innerHTML = artworkData.map(item => `
+                    <div class="admin-artwork-item">
+                        <img src="${item.image}" alt="${item.title}">
+                        <div class="admin-artwork-item-info">
+                            <h5>${item.title}</h5>
+                            <span>${getCategoryLabel(item.category)}</span>
+                        </div>
+                        <button class="admin-artwork-item-delete" onclick="deleteArtwork('${item.id}')" title="Delete">🗑️</button>
+                    </div>`).join('');
             }
 
             if (storiesData.length === 0) {
                 adminStoriesList.innerHTML = '<p style="color:var(--soft-gray);font-size:0.9rem;text-align:center;padding:20px;">No stories published yet.</p>';
             } else {
-                adminStoriesList.innerHTML = storiesData.map(story => '<div class="admin-story-item"><div class="admin-story-item-content"><h5>' + story.title + '</h5><p>' + story.content + '</p></div><button class="admin-artwork-item-delete" onclick="deleteStory('' + story.id + '')" title="Delete">🗑️</button></div>').join('');
+                adminStoriesList.innerHTML = storiesData.map(story => `
+                    <div class="admin-story-item">
+                        <div class="admin-story-item-content">
+                            <h5>${story.title}</h5>
+                            <p>${story.content}</p>
+                        </div>
+                        <button class="admin-artwork-item-delete" onclick="deleteStory('${story.id}')" title="Delete">🗑️</button>
+                    </div>`).join('');
             }
         }
 
         // ==================== EXPORT DATA ====================
         exportDataBtn.addEventListener('click', () => {
-            const allData = {
-                artwork: artworkData,
-                stories: storiesData,
-                ratings: ratingsData,
-                comments: commentsData,
-                exportedAt: new Date().toISOString()
-            };
+            const allData = { artwork: artworkData, stories: storiesData, ratings: ratingsData, comments: commentsData, exportedAt: new Date().toISOString() };
             const dataStr = JSON.stringify(allData, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1209,33 +1145,16 @@
             a.download = 'saurashree-portfolio-data.json';
             a.click();
             URL.revokeObjectURL(url);
-
-            exportDataBtn.textContent = 'Exported!';
-            setTimeout(() => exportDataBtn.textContent = 'Export Data', 1500);
+            exportDataBtn.textContent = '✅ Exported!';
+            setTimeout(() => exportDataBtn.textContent = '💾 Export Data', 1500);
         });
 
         // ==================== ANTI-DOWNLOAD ====================
-        document.addEventListener('contextmenu', (e) => {
-            if (e.target.tagName === 'IMG') e.preventDefault();
-        });
-        document.addEventListener('dragstart', (e) => {
-            if (e.target.tagName === 'IMG') e.preventDefault();
-        });
+        document.addEventListener('contextmenu', (e) => { if (e.target.tagName === 'IMG') e.preventDefault(); });
+        document.addEventListener('dragstart', (e) => { if (e.target.tagName === 'IMG') e.preventDefault(); });
 
         // ==================== INIT ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                loadConfig();
-                loadData();
-            } catch (e) {
-                console.error('Error during initialization:', e);
-                loadingOverlay.classList.add('hidden');
-            }
-            // Safety timeout: always hide after 3 seconds max
-            setTimeout(() => {
-                loadingOverlay.classList.add('hidden');
-            }, 3000);
-        });
+        document.addEventListener('DOMContentLoaded', () => { loadFromCloud(); });
 
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
